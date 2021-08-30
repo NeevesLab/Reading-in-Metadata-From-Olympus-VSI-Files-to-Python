@@ -1,4 +1,5 @@
 import javabridge
+import xml
 import xml.etree.ElementTree as ET
 import bioformats
 
@@ -6,13 +7,13 @@ default_locations=[['Loop','cycle time'],['Loop','Stage loop','Z-Stack','relativ
 default_tag=[['node','attribute'],['node','node','node','attribute']]
 
 # ---- Main function that extracts the relevant metadata from a vsi file
-def extract_metadata(filepath,cycle_vm=True,meta_number=None,stage_loop=True):
+def extract_metadata(filepath,cycle_vm=True,meta_number=None,stage_loop=True,z_stack=False):
     if cycle_vm:
         javabridge.start_vm(class_path=bioformats.JARS)
     biof=extract_meta_bioformats(filepath)
     if meta_number is not None:
         filepath=change_file_num(filepath,meta_number)
-    metadata=extract_meta_manual(filepath,metadata=biof,stage_loop=stage_loop)
+    metadata=extract_meta_manual(filepath,metadata=biof,stage_loop=stage_loop,z_stack=z_stack)
     if cycle_vm:
         javabridge.kill_vm()
     return metadata
@@ -49,13 +50,19 @@ def extract_meta_bioformats(filepath, metadata=dict()):
 # ---- Function that manually reads through oex metadata file and gets other relevant information
 #      paths through the xml file to final metadata value
 
-def extract_meta_manual(file_path,locations=default_locations,tag=default_tag,metadata=dict(),stage_loop=True):
+def extract_meta_manual(file_path,locations=default_locations,tag=default_tag,metadata=dict(),stage_loop=True,z_stack=False):
     file_path=file_path.replace('vsi','oex')
     
-    if stage_loop == False:
+    if stage_loop==False and z_stack==False:
+        locations=[['Loop','cycle time']]
+        tag=[['node','attribute']]
+    elif stage_loop==False and z_stack==True:
         locations=[['Loop','cycle time'],
                            ['Loop','Z-Stack','relative step width']]
         tag=[['node','attribute'],['node','node','attribute']]
+    elif stage_loop==True and z_stack==False:
+        locations=[['Loop','cycle time']]
+        tag=[['node','attribute']]
     tree=ET.parse(file_path)
     root=tree.getroot()
     # get into net
@@ -65,6 +72,7 @@ def extract_meta_manual(file_path,locations=default_locations,tag=default_tag,me
             break
     # iterate through the different values we want to get
     for i in range(len(locations)):
+        #print(locations[i])
         loop_root=root
         path=locations[i][:]
         path_tag=tag[i][:]
@@ -76,17 +84,16 @@ def extract_meta_manual(file_path,locations=default_locations,tag=default_tag,me
                 if  loop_root!='not_found':
                     for l in loop_root:
                         metadata[path[j]]=l.get('val')
-                        
     return metadata
 # ---- Function to look in a directory of the xml and find the subdirectory you're querying. Used for the manual
 #      metedata extraction
 def query_branches(loop,tag,attrib):
     found=False
     # search through subdirectories of directory
-    for l in loop:
+    for k in loop:
         # if the tag and attribute match of subdir match return the subdir
-        if l.tag ==tag and l.attrib['name']==attrib:
-            new_loop=l
+        if k.tag == tag and k.attrib['name']==attrib:
+            new_loop=k
             found=True
             break
     if found:
