@@ -1,10 +1,7 @@
 import javabridge
-import xml
 import xml.etree.ElementTree as ET
 import bioformats
-
-default_locations=[['Loop','cycle time'],['Loop','Stage loop','Z-Stack','relative step width']]
-default_tag=[['node','attribute'],['node','node','node','attribute']]
+import re
 
 # ---- Main function that extracts the relevant metadata from a vsi file
 def extract_metadata(filepath,cycle_vm=True,meta_number=None,stage_loop=True,z_stack=False):
