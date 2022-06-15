@@ -50,53 +50,47 @@ def extract_meta_bioformats(filepath, metadata=dict()):
 # ---- Function that manually reads through oex metadata file and gets other relevant information
 #      paths through the xml file to final metadata value
 
-def extract_meta_manual(file_path,locations=default_locations,tag=default_tag,metadata=dict(),stage_loop=True,z_stack=False):
+def extract_meta_manual(file_path,tag=default_tag,metadata=dict()):
     file_path=file_path.replace('vsi','oex')
-    
-    if stage_loop==False and z_stack==False:
-        locations=[['Loop','cycle time']]
-        tag=[['node','attribute']]
-    elif stage_loop==False and z_stack==True:
-        locations=[['Loop','cycle time'],
-                           ['Loop','Z-Stack','relative step width']]
-        tag=[['node','attribute'],['node','node','attribute']]
-    elif stage_loop==True and z_stack==False:
-        locations=[['Loop','cycle time']]
-        tag=[['node','attribute']]
+    keys=['cycle time','cycle time_unit','relative step width']
+    # read in file as xml tree
     tree=ET.parse(file_path)
     root=tree.getroot()
-    # get into net
-    for subroot in root:
-        if subroot.tag=='net':
-            root=subroot
-            break
-    # iterate through the different values we want to get
-    for i in range(len(locations)):
-        #print(locations[i])
-        loop_root=root
-        path=locations[i][:]
-        path_tag=tag[i][:]
-        # naviate through the directed paths of the xml file
-        for j in range(len(path)):
-            loop_root=query_branches(loop_root,path_tag[j],path[j])
-            # if at the end of the path get the metadata value we want and append it to a dictionary
-            if j==len(path)-1:
-                if  loop_root!='not_found':
-                    for l in loop_root:
-                        metadata[path[j]]=l.get('val')
+    # convert tree to string and split lines
+    xmlstr=ET.tostring(root, encoding='utf8', method='xml').decode()
+    split=xmlstr.splitlines()
+    # find the line location of ketys
+    line_location=[]
+    for k in keys:
+        count=0
+        # here we need to add quotation marks to match the style of the xml file
+        modified_key='"{}"'.format(k)
+        # if a line contains our key we store the next line number in a list, as 
+        # this is where the value is contained
+        for line in split:
+            if modified_key in line:
+                line_location.append(count+1)
+                break
+            count+=1
+     # iterate through the line number values and extract the numbers from them and
+     # compile to a list 
+    values=[]
+    for l in line_location:
+        print(split[l])
+        numeric_const_pattern = '[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
+        rx = re.compile(numeric_const_pattern, re.VERBOSE)
+        digit=float(rx.findall(split[l])[0])
+        values.append(digit)
+    # store manual_metadata values in a dictionary
+    manual_metadata=dict(zip(keys,values))
+    # convert cycle time to seconds
+    if manual_metadata['cycle time_unit']==1: # unit of 1 corresponds to hours
+        manual_metadata['cycle time']=manual_metadata['cycle time']/3600
+    elif manual_metadata['cycle time_unit']==2:# unit of 2 corresponds to minutes
+        manual_metadata['cycle time']=manual_metadata['cycle time']/60
+    elif manual_metadata['cycle time_unit']==4:# unit of 4 corresponds to milliseconds
+        manual_metadata['cycle time']=manual_metadata['cycle time']/60
+    # and we skip the unit of 3 as it corresponds to seconds
+    manual_metadata.pop('cycle time_unit')
+    metadata=metadata|manual_metadata
     return metadata
-# ---- Function to look in a directory of the xml and find the subdirectory you're querying. Used for the manual
-#      metedata extraction
-def query_branches(loop,tag,attrib):
-    found=False
-    # search through subdirectories of directory
-    for k in loop:
-        # if the tag and attribute match of subdir match return the subdir
-        if k.tag == tag and k.attrib['name']==attrib:
-            new_loop=k
-            found=True
-            break
-    if found:
-        return new_loop
-    else:
-        return 'not_found'
