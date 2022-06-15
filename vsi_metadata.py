@@ -4,13 +4,13 @@ import bioformats
 import re
 
 # ---- Main function that extracts the relevant metadata from a vsi file
-def extract_metadata(filepath,cycle_vm=True,meta_number=None,stage_loop=True,z_stack=False):
+def extract_metadata(filepath,cycle_vm=True,meta_number=None):
     if cycle_vm:
         javabridge.start_vm(class_path=bioformats.JARS)
     biof=extract_meta_bioformats(filepath)
     if meta_number is not None:
         filepath=change_file_num(filepath,meta_number)
-    metadata=extract_meta_manual(filepath,metadata=biof,stage_loop=stage_loop,z_stack=z_stack)
+    metadata=extract_meta_manual(filepath,metadata=biof)
     if cycle_vm:
         javabridge.kill_vm()
     return metadata
