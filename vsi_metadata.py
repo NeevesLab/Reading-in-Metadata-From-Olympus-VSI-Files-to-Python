@@ -19,23 +19,8 @@ def extract_metadata(filepath,cycle_vm=True,meta_number=None,stage_loop=True,z_s
     return metadata
 
 def change_file_num(string,meta_number):
-    nums=[]
-    location=[]
-    split_string=split(string)
-    for i in range(len(split_string)):
-        if split_string[i].isdigit():
-            nums.append(split_string[i])
-            location.append(i)
-    nums=[int(i) for i in split(string) if i.isdigit()]
-    original=nums[-1]
-    update=meta_number
-    loc=location[-1]
-    split_string[loc]=str(update)
-    new_string = "".join(split_string)
+    new_string = re.sub('(\d+)(?!.*\d)',str(meta_number),string)
     return new_string
-
-def split(word):
-    return [char for char in word]
 
 # ---- Function that gets the attainable information using bioformats
 def extract_meta_bioformats(filepath, metadata=dict()):
