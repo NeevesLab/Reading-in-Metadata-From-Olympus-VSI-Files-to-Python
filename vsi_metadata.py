@@ -32,7 +32,7 @@ def extract_meta_bioformats(filepath, metadata=dict()):
 # ---- Function that manually reads through oex metadata file and gets other relevant information
 #      paths through the xml file to final metadata value
 
-def extract_meta_manual(file_path,keys=['cycle time','cycle time_unit','relative step width']):
+def extract_meta_manual(file_path,metadata=dict(),keys=['cycle time','cycle time_unit','relative step width']):
     file_path=file_path.replace('vsi','oex')
     # read in file as xml tree
     tree=ET.parse(file_path)
