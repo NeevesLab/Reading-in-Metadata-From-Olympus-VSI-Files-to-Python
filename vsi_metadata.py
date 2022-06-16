@@ -57,7 +57,6 @@ def extract_meta_manual(file_path,metadata=dict(),keys=['cycle time','cycle time
      # compile to a list 
     values=[]
     for l in line_location:
-        print(split[l])
         numeric_const_pattern = '[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
         rx = re.compile(numeric_const_pattern, re.VERBOSE)
         digit=float(rx.findall(split[l])[0])
